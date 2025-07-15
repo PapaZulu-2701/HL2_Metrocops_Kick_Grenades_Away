@@ -5353,8 +5353,9 @@ void CNPC_MetroPolice::StartTask(const Task_t* pTask)
 	{
 		DevMsg("CP StartTask: Iniciando TASK_METROPOLICE_FACE_GRENADE (Turbo Turn LIGADO).\n");	// Logs a debug message to the developer console.
 
-		m_bForceFastTurn = true;	// Enables the high-speed 'turbo' turn for the NPC.
-		TaskComplete();				// Immediately marks this task as complete.
+		// Ao iniciar a task, LIGA o modo turbo.
+		m_bForceFastTurn = true;
+		DevMsg("StartTask: Iniciando task para VIRAR para a granada (TURBO LIGADO).\n");
 		break;
 	}
 
@@ -5768,7 +5769,34 @@ void CNPC_MetroPolice::RunTask(const Task_t* pTask)
 {
 	switch (pTask->iTask)
 	{
+		// [MODIFICATION] This task actively turns the Combine to face the grenade.
+	case TASK_METROPOLICE_FACE_GRENADE:
+	{
+		// Every frame, re-acquire the grenade's position and update the motor's target yaw.
+		// This creates an "active" turn that prevents the AI from idling and restarting the schedule.
+		CSound* pSound = GetBestSound();
+		if (pSound && pSound->m_hOwner)
+		{
+			GetMotor()->SetIdealYawToTargetAndUpdate(pSound->m_hOwner->GetAbsOrigin());
+		}
+		else
+		{
+			// If the sound is lost, turn off the turbo and fail the task.
+			m_bForceFastTurn = false;
+			TaskFail(FAIL_NO_ENEMY);
+			return;
+		}
 
+		// The task completes only when the Combine is facing the ideal direction.
+		if (FacingIdeal())
+		{
+			// On completion, we MUST disable the "turbo turn" flag to return to normal speed.
+			m_bForceFastTurn = false;
+			DevMsg("RunTask: Terminou de VIRAR para a granada (TURBO DESLIGADO).\n");
+			TaskComplete();
+		}
+		break;
+	}
 
 		// [NOVO] Adicione este case
 	case TASK_METROPOLICE_PLAY_KICK_ANIMATION:
