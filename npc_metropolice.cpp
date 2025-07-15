@@ -4994,39 +4994,38 @@ int CNPC_MetroPolice::SelectSchedule(void)
 		{
 			AnnounceTakeCoverFromDanger(pSound);
 
-			// --- INÍCIO DA LÓGICA DE CHUTAR GRANADA (ADAPTADO DO COMBINE) ---
+			// --- START OF GRENADE KICK LOGIC (ADAPTED FROM COMBINE) --- [MODIFICATION]
 
-			// 3. Validação do Dono do Som: Verificamos se o som foi feito por uma entidade.
+			// 3. Sound Owner Validation: Check if the sound was caused by an entity.
 			if (pSound->m_hOwner)
 			{
-				// 4. Validação do Tipo: Garantimos que a entidade é uma granada de fragmentação.
-				// strcmp compara duas strings. Retorna 0 se forem iguais.
+				// 4. Type Validation: Ensure the entity is a frag grenade.
+				// strcmp compares two strings. Returns 0 if they are equal.
 				if (strcmp(pSound->m_hOwner->GetClassname(), "npc_grenade_frag") == 0)
 				{
-					// Define o alcance efetivo para a habilidade de chute.
-					const float flAbilityRange = 72.0f; // Um pouco mais de 1 metro.
+					// Set the effective range for the kick ability.
+					const float flAbilityRange = 50.0f; // Just over 1 meter.
 
-					// Calcula a distância entre o policial e a granada.
+					// Calculate the distance between the police officer and the grenade.
 					float flDist = GetAbsOrigin().DistTo(pSound->m_hOwner->GetAbsOrigin());
 
-					// 5. Validação de Alcance: A granada está perto o suficiente para chutar?
+					// 5. Range Validation: Is the grenade close enough to kick?
 					if (flDist <= flAbilityRange)
 					{
-						// Se todas as condições foram atendidas, executa a schedule de chutar a granada.
-						// Lembre-se de usar o nome exato da schedule que você criou!
+						// If all conditions are met, execute the schedule to kick the grenade.
+						// Remember to use the exact name of the schedule you created!
 						return SCHED_METROPOLICE_KICK_GRENADE;
 					}
 				}
 			}
 
-			// --- FIM DA LÓGICA DE CHUTAR GRANADA ---
+			// --- END OF GRENADE KICK LOGIC --- 
 
-			// Comportamento Padrão: Se qualquer uma das condições acima falhar (não é uma granada, está muito longe, etc.),
-			// o NPC irá simplesmente correr para se proteger.
+	
 			return SCHED_TAKE_COVER_FROM_BEST_SOUND;
 		}
 
-		// Se o som não for de perigo, mas for de combate e o inimigo não estiver visível, apenas encara a direção do som.
+	
 		if (pSound && !HasCondition(COND_SEE_ENEMY) && (pSound->m_iType & (SOUND_PLAYER | SOUND_PLAYER_VEHICLE | SOUND_COMBAT)))
 		{
 			GetMotor()->SetIdealYawToTarget(pSound->GetSoundReactOrigin());
@@ -5414,24 +5413,24 @@ void CNPC_MetroPolice::StartTask(const Task_t* pTask)
 
 	case TASK_METROPOLICE_PLAY_KICK_ANIMATION: // [MODIFICATION]
 	{
-		// Procura o índice da nova animação que você encontrou.
+		// Finds the index of the new animation you located.
 		int kickSequence = LookupSequence("kickdoorbaton");
 
 		if (kickSequence != ACTIVITY_NOT_AVAILABLE)
 		{
-			// Define a animação que o NPC deve tocar.
+			// Sets the animation the NPC should play.
 			SetSequence(kickSequence);
 
-			// [NOVA LINHA] Aumenta a velocidade da animação em 10x.
-			m_flPlaybackRate = 2.75f;
+			// [NEW LINE] Increases the animation playback speed by 2.5x.
+			m_flPlaybackRate = 2.50f;
 
-			// Define a "atividade ideal" como DO_NOT_DISTURB.
+			// Sets the "ideal activity" to DO_NOT_DISTURB.
 			SetIdealActivity(ACT_DO_NOT_DISTURB);
 		}
 		else
 		{
 			TaskFail(FAIL_NO_ROUTE);
-			DevMsg("ERRO: Metropolice não encontrou a animação 'kickdoorbaton'!\n");
+			DevMsg("ERROR: Metropolice did not find the 'kickdoorbaton' animation!\n");
 		}
 		break;
 	}
@@ -5798,16 +5797,16 @@ void CNPC_MetroPolice::RunTask(const Task_t* pTask)
 		break;
 	}
 
-		// [NOVO] Adicione este case
+	// [MODIFICATION] 
 	case TASK_METROPOLICE_PLAY_KICK_ANIMATION:
 	{
-		// Mantém o NPC "ocupado" para que ele não tente fazer outra coisa.
+		// Keeps the NPC "busy" so it doesn't try to do something else.
 		SetIdealActivity(ACT_DO_NOT_DISTURB);
 
-		// Verifica a cada frame se a animação que está tocando já terminou.
+		// Checks each frame if the current animation has finished playing.
 		if (IsSequenceFinished())
 		{
-			// Se a animação terminou, a tarefa está completa.
+			// If the animation is finished, the task is complete.
 			TaskComplete();
 		}
 		break;
